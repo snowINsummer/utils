@@ -1,0 +1,15 @@
+#过滤文件  
+*.iml
+#过滤文件夹  
+.idea/
+.idea/*.xml
+logs/
+logs/*.log
+target/
+target/*.class
+target/*.xml
+target/*.html
+target/*.css
+target/*.js
+target/*.properties
+target/*.lst 
