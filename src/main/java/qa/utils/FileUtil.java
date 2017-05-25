@@ -49,6 +49,7 @@ public class FileUtil {
 	 */
 	public static void createFile(String filePath) {
 		try {
+			deleteFile(filePath);
 			new File(filePath).createNewFile();
 		} catch (IOException e) {
 			e.printStackTrace();

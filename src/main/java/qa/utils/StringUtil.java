@@ -12,6 +12,7 @@ import java.math.RoundingMode;
 import java.net.URLEncoder;
 import java.security.MessageDigest;
 import java.text.DecimalFormat;
+import java.util.Random;
 
 /**
  * Created by ${chris.li} on ${2015-10-30}.
@@ -383,11 +384,37 @@ public class StringUtil {
         }
         return result;
     }
+    /*
+     * 返回长度为【strLength】的随机数，在前面补0
+     */
+    public static String getFixLenthString(int strLength) {
 
+        Random rm = new Random();
+
+        // 获得随机数
+        double pross = (1 + rm.nextDouble()) * Math.pow(10, strLength);
+
+        // 将获得的获得随机数转化为字符串
+        String fixLenthString = new BigDecimal(pross).toPlainString();
+
+        // 返回固定的长度的随机数
+        return fixLenthString.substring(1, strLength + 1);
+    }
+
+    public static synchronized String createFixLenthString(int length) {
+        String str = "";
+        String value = "1";
+        for (int i=0;i<length;i++){
+            str += value;
+        }
+        return str;
+    }
 
     public static  void  main(String[] args) throws RunException {
-        Object a = isNumericAndTransformDouble("2");
-        System.out.println(a);
+//        Object a = isNumericAndTransformDouble("2");
+//        String a = createFixLenthString(4500);
+//        System.out.println(a);
+
 //        System.out.println(urlEncoder("{\"data\":{\"applyCode\":\"AO20170330000001\", \"loanAmount\":2000.44, \"loanDate\":1459845047000, \"peroidValue\":12, \"instalmentPlanId\":\"402881e55914ca00015914e3e0ee000a\"}}"));
 //        System.out.println(true&&true);
 //        System.out.println("dd".replace("123", "456"));
