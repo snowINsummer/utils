@@ -1,18 +1,19 @@
 package qa.httpClient;
 
-import org.apache.http.Header;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.ParseException;
+import org.apache.http.*;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.GzipDecompressingEntity;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.*;
 import org.apache.http.client.params.ClientPNames;
 import org.apache.http.client.params.CookiePolicy;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.entity.mime.MultipartEntity;
+import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicHeader;
+import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.CoreConnectionPNames;
 import org.apache.http.params.HttpParams;
@@ -23,6 +24,7 @@ import qa.utils.StringUtil;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
@@ -41,6 +43,8 @@ public class HttpClientUtil {
     public static final long CONN_MANAGER_TIMEOUT = 60000;
 
     private HttpClient httpClient = null;
+
+    private boolean getRspHeaders;
 
     public HttpClientUtil(){
         httpClient = getOneHttpClient();
@@ -311,7 +315,7 @@ public class HttpClientUtil {
      */
     public ResponseInfo executePost(String url, String json) throws HTTPException {
         long startTime = System.currentTimeMillis();
-        ResponseInfo responseInfo = executePostRequest(url,true,null, json);
+        ResponseInfo responseInfo = executePostRequest(url,true,null, json,null);
         long endTime = System.currentTimeMillis();
         long executeTime = (endTime-startTime);
         responseInfo.setTime(executeTime);
@@ -328,7 +332,7 @@ public class HttpClientUtil {
      */
     public ResponseInfo executePostWithHeaders(String url, Map<String,String> mapHeaders, String json) throws HTTPException {
         long startTime = System.currentTimeMillis();
-        ResponseInfo responseInfo = executePostRequest(url,true, mapHeaders, json);
+        ResponseInfo responseInfo = executePostRequest(url,true, mapHeaders, json,null);
         long endTime = System.currentTimeMillis();
         long executeTime = (endTime-startTime);
         responseInfo.setTime(executeTime);
@@ -344,7 +348,7 @@ public class HttpClientUtil {
      */
     public ResponseInfo executePostKeepConn(String url, String json) throws HTTPException {
         long startTime = System.currentTimeMillis();
-        ResponseInfo responseInfo = executePostRequest(url,false,null, json);
+        ResponseInfo responseInfo = executePostRequest(url,false,null, json,null);
         long endTime = System.currentTimeMillis();
         long executeTime = (endTime-startTime);
         responseInfo.setTime(executeTime);
@@ -360,7 +364,22 @@ public class HttpClientUtil {
      */
     public ResponseInfo executePostKeepConnWithHeaders(String url, Map<String,String> mapHeaders, String json) throws HTTPException {
         long startTime = System.currentTimeMillis();
-        ResponseInfo responseInfo = executePostRequest(url,false, mapHeaders, json);
+        ResponseInfo responseInfo = executePostRequest(url,false, mapHeaders, json,null);
+        long endTime = System.currentTimeMillis();
+        long executeTime = (endTime-startTime);
+        responseInfo.setTime(executeTime);
+        return responseInfo;
+    }
+    /**
+     * POST请求，保持连接，有headers
+     * @param url
+     * @param mapHeaders
+     * @return
+     * @throws HTTPException
+     */
+    public ResponseInfo executeUploadKeepConnWithHeaders(String url, Map<String,String> mapHeaders, File file) throws HTTPException {
+        long startTime = System.currentTimeMillis();
+        ResponseInfo responseInfo = executePostRequest(url,false, mapHeaders, null, file);
         long endTime = System.currentTimeMillis();
         long executeTime = (endTime-startTime);
         responseInfo.setTime(executeTime);
@@ -376,7 +395,7 @@ public class HttpClientUtil {
      * @return
      * @throws HTTPException
      */
-    private ResponseInfo executePostRequest(String url, boolean doesShutdown, Map<String, String> mapHeader, String json) throws HTTPException {
+    private ResponseInfo executePostRequest(String url, boolean doesShutdown, Map<String, String> mapHeader, String json, File file) throws HTTPException {
         HttpPost httpPost = new HttpPost(url);
         if (null != mapHeader){
             for(Map.Entry<String,String> entry : mapHeader.entrySet()){
@@ -387,14 +406,51 @@ public class HttpClientUtil {
             StringEntity se = new StringEntity(json, HTTP.UTF_8);
             httpPost.setEntity(se);
         }
+        if (null != file){
+            MultipartEntity entity = new MultipartEntity();
+            entity.addPart("file", new FileBody(file));
+            httpPost.setEntity(entity);
+        }
         return getHttpResponse(httpPost, doesShutdown);
     }
 
+    public ResponseInfo executePostFormUrlencoded(String url, boolean doesShutdown, Map<String, String> mapHeader, Map<String, String> data,File file) throws HTTPException, UnsupportedEncodingException {
+        HttpPost httpPost = new HttpPost(url);
+        if (null != mapHeader){
+            for(Map.Entry<String,String> entry : mapHeader.entrySet()){
+                httpPost.setHeader(entry.getKey(),entry.getValue());
+            }
+        }
+        //装填参数
+        List<NameValuePair> nvps = new ArrayList<NameValuePair>();
+        if (null != data){
+            for(Map.Entry<String,String> entry : data.entrySet()){
+                nvps.add(new BasicNameValuePair(entry.getKey(), entry.getValue()));
+//                httpPost.setHeader(entry.getKey(),entry.getValue());
+            }
+        }
+        //设置参数到请求对象中
+        httpPost.setEntity(new UrlEncodedFormEntity(nvps, HTTP.UTF_8));
+        if (null != file){
+            MultipartEntity entity = new MultipartEntity();
+            entity.addPart("file", new FileBody(file));
+            httpPost.setEntity(entity);
+        }
+        return getHttpResponse(httpPost, doesShutdown);
+    }
 
     public ResponseInfo getHttpResponse(HttpRequestBase httpRequest, boolean doesShutdown) throws HTTPException {
         ResponseInfo responseInfo = new ResponseInfo();
         try {
             HttpResponse httpResponse = httpClient.execute(httpRequest);
+            if (isGetRspHeaders()){
+                Map<String,String> map = new HashMap<>();
+                Header[] headers = httpResponse.getAllHeaders();
+                for(int i=0;i<headers.length;i++){
+                    map.put(headers[i].getName(),headers[i].getValue());
+                }
+                responseInfo.setHeaders(map);
+            }
             int statusCode = httpResponse.getStatusLine().getStatusCode();
             responseInfo.setStatus(statusCode);
             if(200 == statusCode) {
@@ -583,5 +639,13 @@ public class HttpClientUtil {
         DefaultHttpClient httpClient = new DefaultHttpClient(parentParams);
         httpClient.getCookieStore().getCookies();
         return httpClient;
+    }
+
+    public boolean isGetRspHeaders() {
+        return getRspHeaders;
+    }
+
+    public void setGetRspHeaders(boolean getRspHeaders) {
+        this.getRspHeaders = getRspHeaders;
     }
 }

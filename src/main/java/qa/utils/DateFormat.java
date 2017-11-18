@@ -99,6 +99,12 @@ public class DateFormat {
 		return date;
 	}
 
+    public static int getYear(){
+        Calendar cal = Calendar.getInstance();
+        int month = cal.get(Calendar.YEAR);
+        return month;
+    }
+
 	public static int getMonth(){
         Calendar cal = Calendar.getInstance();
         int month = cal.get(Calendar.MONTH) + 1;
@@ -213,7 +219,27 @@ public class DateFormat {
         return "";
     }
 
-    public static void getWorkAttendance(String userName, int weekNeedToWorkHour){
+    public static String getOffDutyTime(String start, int dailyNeedWorkHour) {
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        try {
+            Date d1 = df.parse(start);
+            long startTime = d1.getTime();
+            long needTime = dailyNeedWorkHour * 60 * 60 * 1000;
+            long endTime = startTime + needTime;
+            return getDateToString(endTime);
+
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+
+        return "";
+    }
+
+
+
+/*
+
+    public static void getWorkAttendance(String userName, int weekNeedToWorkHour, int dailyNeedWorkHour){
         try {
             System.out.println("员工：" + userName);
             System.out.println("");
@@ -240,11 +266,13 @@ public class DateFormat {
                         punchCardTime.add(time);
                     }
                 }
-                System.out.println(dateStr + "打卡时间:" + punchCardTime.toString());
+                System.out.println(dateStr);
+                System.out.println("打卡时间:" + punchCardTime.toString());
                 if (punchCardTime.size() > 0) {
                     long dayWorkTime = getDiffTime(punchCardTime.get(0), punchCardTime.get(punchCardTime.size() - 1));
                     weekWorkTime += dayWorkTime;
                     System.out.println(getWorkTime(dayWorkTime));
+                    System.out.println("工作满"+dailyNeedWorkHour+"小时的下班时间：" + getOffDutyTime(punchCardTime.get(0), dailyNeedWorkHour));
                 } else {
                     System.out.println("未打卡。");
                 }
@@ -266,13 +294,16 @@ public class DateFormat {
         }
     }
 
-	public static void main(String[] args) throws HTTPException, ParseException, RunException {
-        getWorkAttendance("张力", 45);
+
+    public static void main(String[] args) throws HTTPException, ParseException, RunException {
+        getWorkAttendance("郭小丽", 45,9);
     }
 
-/*
 	public static void main(String[] args){
-		String a = getDateString();
+	    int c;
+        System.out.println(c == null);
+
+        String a = getDateString();
 		a = getAddDay(1);
         a = getDate("yyyy-MM-dd HH:mm:ss");
         a = getDate("yyyy-MM-dd_HH-mm-ss",System.currentTimeMillis());

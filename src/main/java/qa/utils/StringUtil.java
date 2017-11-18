@@ -411,6 +411,8 @@ public class StringUtil {
     }
 
     public static  void  main(String[] args) throws RunException {
+        String s = "[\"110\",\"111\"]";
+        System.out.println(urlEncoderUTF8(s));
 //        Object a = isNumericAndTransformDouble("2");
 //        String a = createFixLenthString(4500);
 //        System.out.println(a);

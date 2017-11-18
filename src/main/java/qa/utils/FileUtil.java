@@ -428,7 +428,7 @@ public class FileUtil {
      * @param in
      * @throws IOException
      */
-    public static void saveToFile(String fileName, InputStream in) throws IOException {
+    public static void saveFile(String fileName, InputStream in) throws IOException {
         FileOutputStream fos = null;
         BufferedInputStream bis = null;
         int BUFFER_SIZE = 1024;
@@ -437,12 +437,20 @@ public class FileUtil {
          //获取网络输入流
         bis = new BufferedInputStream(in);
          //建立文件
-        fos = new FileOutputStream(fileName);
-         //保存文件
-        while ((size = bis.read(buf)) != -1)
-            fos.write(buf, 0, size);
-        fos.close();
-        bis.close();
+		try {
+			fos = new FileOutputStream(fileName);
+			//保存文件
+			while ((size = bis.read(buf)) != -1)
+				fos.write(buf, 0, size);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}finally {
+			fos.close();
+			bis.close();
+		}
+
     }
 
 	public static void deleteFile(String saveFilePath) {
